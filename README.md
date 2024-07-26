@@ -15,13 +15,13 @@ import (
 func main() {
 	app := goapp.NewApp()
 
-	app.AddHandler(goapp.CommandChecker("command1"), func(ctx context.Context, args []string) error {
-		log.Printf("command1. args: %v", args)
+	app.AddSubCommand("command1", func(ctx context.Context, args []string) error {
+		log.Printf("[%s] args: %v", args[0], args)
 		return nil
 	})
 
-	app.AddHandler(goapp.CommandChecker("command2"), func(ctx context.Context, args []string) error {
-		log.Printf("command2. args: %v", args)
+	app.AddSubCommand("command2", func(ctx context.Context, args []string) error {
+		log.Printf("[%s] args: %v", args[0], args)
 		return nil
 	})
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 var ErrHandlerNotFound = errors.New("handler not found")
@@ -11,46 +13,70 @@ var ErrHandlerNotFound = errors.New("handler not found")
 func NewApp() *App {
 	return &App{
 		handlers: []*handlerWrapper{},
+		shutdownHandler: func(err error) error {
+			return nil
+		},
 	}
 }
 
 type App struct {
-	handlers []*handlerWrapper
+	handlers        []*handlerWrapper
+	shutdownHandler func(err error) error
 }
 
 func (app *App) Run() error {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, keyAppPath, os.Args[0])
+	ctx := context.WithValue(context.Background(), keyAppPath, os.Args[0])
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	args := os.Args[1:]
+	errChan := make(chan error)
 
-	for _, handler := range app.handlers {
-		if handler.checker(args) {
-			return handler.handler(ctx, args)
+	go func() {
+		args := os.Args[1:]
+
+		for _, handler := range app.handlers {
+			if handler.match(args) {
+				errChan <- handler.handler(ctx, args)
+				return
+			}
 		}
-	}
 
-	return ErrHandlerNotFound
+		errChan <- ErrHandlerNotFound
+	}()
+
+	select {
+	case err := <-errChan:
+		return app.shutdownHandler(err)
+	case <-ctx.Done():
+		return app.shutdownHandler(ctx.Err())
+	}
 }
 
-func (app *App) AddHandler(checker Checker, handler Handler) {
+func (app *App) AddHandler(matcher Matcher, handler Handler) {
 	app.handlers = append(app.handlers, &handlerWrapper{
-		checker: checker,
+		match:   matcher,
 		handler: handler,
 	})
 }
 
-type Checker func(args []string) bool
+func (app *App) AddSubCommand(name string, handler Handler) {
+	app.handlers = append(app.handlers, &handlerWrapper{
+		match: func(args []string) bool {
+			return len(args) > 0 && args[0] == name
+		},
+		handler: handler,
+	})
+}
+
+func (app *App) AddShutdownHandler(handler func(err error) error) {
+	app.shutdownHandler = handler
+}
+
+type Matcher func(args []string) bool
 
 type Handler func(ctx context.Context, args []string) error
 
 type handlerWrapper struct {
-	checker Checker
+	match   Matcher
 	handler Handler
-}
-
-func CommandChecker(command string) Checker {
-	return func(args []string) bool {
-		return len(args) > 0 && args[0] == command
-	}
 }
