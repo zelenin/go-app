@@ -20,6 +20,7 @@ func NewApp() *App {
 }
 
 type App struct {
+	defaultHandler  Handler
 	handlers        []*handlerWrapper
 	shutdownHandler func(err error) error
 }
@@ -41,6 +42,11 @@ func (app *App) Run() error {
 			}
 		}
 
+		if app.defaultHandler != nil {
+			errChan <- app.defaultHandler(ctx, args)
+			return
+		}
+
 		errChan <- ErrHandlerNotFound
 	}()
 
@@ -50,6 +56,10 @@ func (app *App) Run() error {
 	case <-ctx.Done():
 		return app.shutdownHandler(ctx.Err())
 	}
+}
+
+func (app *App) AddDefaultHandler(handler Handler) {
+	app.defaultHandler = handler
 }
 
 func (app *App) AddHandler(matcher Matcher, handler Handler) {
