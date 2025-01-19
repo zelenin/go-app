@@ -14,7 +14,7 @@ func NewApp() *App {
 	return &App{
 		handlers: []*handlerWrapper{},
 		shutdownHandler: func(err error) error {
-			return nil
+			return err
 		},
 	}
 }
