@@ -1,0 +1,29 @@
+version: "2"
+
+linters:
+  default: standard
+
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -S1005
+        - -ST1000
+  
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+    - golines
+    - swaggo
+
+  settings:
+    gofmt:
+      simplify: false
+    golines:
+      max-len: 200
+    
+run:
+  timeout: 5m
+  concurrency: 4
