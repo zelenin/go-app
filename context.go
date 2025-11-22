@@ -2,8 +2,10 @@ package app
 
 import "context"
 
+type ctxKey string
+
 const (
-	keyAppPath = "app-path"
+	keyAppPath = ctxKey("app-path")
 )
 
 func GetAppPath(ctx context.Context) string {
