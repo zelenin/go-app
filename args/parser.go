@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func Parse(args []string, options interface{}) error {
+func Parse(args []string, options any) error {
 	optsValue := reflect.ValueOf(options)
 	if optsValue.Kind() != reflect.Pointer || optsValue.Elem().Kind() != reflect.Struct {
 		return errors.New("options parameter must be a pointer to a struct")

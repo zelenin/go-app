@@ -10,6 +10,12 @@ import (
 
 var ErrHandlerNotFound = errors.New("handler not found")
 
+type App struct {
+	defaultHandler  Handler
+	handlers        []*handlerWrapper
+	shutdownHandler func(err error) error
+}
+
 func NewApp() *App {
 	return &App{
 		handlers: []*handlerWrapper{},
@@ -17,12 +23,6 @@ func NewApp() *App {
 			return err
 		},
 	}
-}
-
-type App struct {
-	defaultHandler  Handler
-	handlers        []*handlerWrapper
-	shutdownHandler func(err error) error
 }
 
 func (app *App) Run() error {
